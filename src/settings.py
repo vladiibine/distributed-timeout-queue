@@ -1,5 +1,30 @@
+# work is considered timed out after this many seconds. The task gets
+# put back in the TODOS list, from the IN_PROGRESS set
 TIMEOUT_WORK = 0.2  # seconds
-ITEMS_TO_PROCESS = 100
+
+# How much time does the cleaner wait until cleaning up timed-out tasks
+CLEANER_SLEEPS_FOR = TIMEOUT_WORK * 10  # seconds
+
+# How many items we should process
+ITEMS_TO_PROCESS = 10000
+
+# A worker waits at least this amount of time (seconds) before processing the work
 PROCESS_WAIT_MIN = 0  # seconds
+# A worker waits at most this many seconds before processing the owrk
 PROCESS_WAIT_MAX = 0.22  # seconds
-NUM_WORKERS = 4
+# When there's no work in the queue, a worker will sleep for this many seconds before
+# waking up to poll again
+PROCESS_WAIT_IDLE = 5  # seconds
+
+# Number of processes processing work
+NUM_WORKERS = 40
+
+
+# The names of the 3 queues we're using
+TODOS_QUEUE_NANE = 'todos'
+IN_PROGRESS_QUEUE_NAME = 'in_progress'
+DONE_QUEUE_NAME = 'done'
+
+# If this is False, output from all the workers and the cleaner will be shown
+# When True, we'll only show a summary report, once the work seems to be all done
+ONLY_LOG_SUMMARY = True
