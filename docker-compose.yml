@@ -10,7 +10,28 @@ services:
     depends_on:
       - redis
 
-  work-consumer:
+  work-consumer-1:
+    build: .
+    command: python consume_work.py
+    depends_on:
+      - work-creator
+      - queue-cleaner
+
+  work-consumer-2:
+    build: .
+    command: python consume_work.py
+    depends_on:
+      - work-creator
+      - queue-cleaner
+
+  work-consumer-3:
+    build: .
+    command: python consume_work.py
+    depends_on:
+      - work-creator
+      - queue-cleaner
+
+  work-consumer-4:
     build: .
     command: python consume_work.py
     depends_on:

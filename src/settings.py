@@ -6,7 +6,7 @@ TIMEOUT_WORK = 0.2  # seconds
 CLEANER_SLEEPS_FOR = TIMEOUT_WORK * 10  # seconds
 
 # How many items we should process
-ITEMS_TO_PROCESS = 10000
+ITEMS_TO_PROCESS = 100000
 
 # A worker waits at least this amount of time (seconds) before processing the work
 PROCESS_WAIT_MIN = 0  # seconds
