@@ -1,0 +1,58 @@
+version: '2'
+
+services:
+  redis:
+    image: redis:5.0.2-alpine
+
+  work-creator:
+    build: work-creator
+    command: python create_work.py
+    depends_on:
+      - redis
+
+  work-consumer:
+    build: work-consumer
+    command: python consume_work.py
+    depends_on:
+      - work-creator
+
+
+
+#services:
+#  database:
+#    image: postgres:10.4
+#    env_file:
+#      - .env
+#
+#  database_init:
+#    build: _database_init
+#    command: /app/container-entrypoint-db_init.sh
+#    depends_on:
+#      - database
+#
+#  benchmark_tornado:
+#    build: tornado
+#    command: /app/container-entrypoint-tornado.sh
+##    command: tail -f /dev/null
+##    command: nc -l 8000
+#    env_file:
+#      - .env
+#    ports:
+#      - "9002:8000"
+#    depends_on:
+#      - database_init
+#
+#  benchmark_dj:
+#    build: django
+#    command: /app/container-entrypoint-django.sh
+#    working_dir: /app/benchmark_dj/
+#    env_file:
+#      - .env
+#    ports:
+#      - "9001:8000"
+#    depends_on:
+#      - database_init
+
+
+
+

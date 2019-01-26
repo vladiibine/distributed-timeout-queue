@@ -1,0 +1,54 @@
+Testing out some ideas on how to use redis as a work queue.
+
+Main idea: there are 3 queues:
+todos, in_progress and done
+They are implemented as sets in redis... I know, weird, but there's the atomic 'smove' operation which is cool
+
+The creator puts workloads to the todos "queue"
+The worker pulls work from the "todos", moves it first to "in_progress", and when done, moves it to "done"
+The interesting part is when the work times out. The cleaner moves such timed-out keys back to "todos".
+
+To ckech what happened to redis,
+```
+$ docker-exec redis /bin/sh
+# redis-cli
+> KEYS *
+> SMEMBERS done
+
+```
+######
+#
+#
+Coordinator flow:
+1. SADD todos "url1"   # add "url1" to the todos set
+
+Worked flow when pulling work:
+0. while true:
+1. SRANDMEMBER todos  									# get a random member from the todos set; does NOT remove it
+2. SMOVE 'url1' from 'todos' to 'in_progress'  	# => returns success   # move the key atomically
+3. IF success: SETEX 'url1-lock' 1000  			# set an expiration date for the key
+4. ELSE: done
+5. sleep
+6. endwhile;
+
+Worker flow when acknowledging work done:
+0. finish work
+1. TTL 'url1-lock'								# returns a number; -2 => expired; -1 => never expires; >=0 hasn't expired yet
+2. if >=-1:
+3. MULTI
+4. SMOVE 'url1' from 'in_progress' to 'done'
+5. DEL 'url1-lock'
+6. exec
+7. else if == -2:
+8. ... :( someone else confirmed this work, so we can throw it away!
+9. endif;
+
+
+Cleaner flow:
+1. for elem in SMEMBERS todos:
+2. TTL elem-lock						# returns a number; we're looking for -2, which means 'expired' or 'non-existent'
+3. if == -2:
+4. multi
+5. del 'elem-lock'
+6. SMOVE elem from 'in_progress' to 'todos'
+7. EXEC
