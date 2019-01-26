@@ -14,7 +14,7 @@ PROCESS_WAIT_MIN = 0  # seconds
 PROCESS_WAIT_MAX = 0.22  # seconds
 # When there's no work in the queue, a worker will sleep for this many seconds before
 # waking up to poll again
-PROCESS_WAIT_IDLE = 5  # seconds
+PROCESS_WAIT_IDLE = 1  # seconds
 
 # Number of processes processing work
 NUM_WORKERS = 40
