@@ -1,12 +1,27 @@
+import random
+import time
+
 import redis
+
+from log_utils import log
+from settings import TIMEOUT_WORK, PROCESS_WAIT_MIN, PROCESS_WAIT_MAX
 
 
 def main():
     r = redis.Redis(host='redis')
+    log("Worker starting")
+
+    successful = 0
+    total = 0
 
     for workload in pull_work(r):
+        total += 1
+        log(f"Worker starting to process {workload}")
         processed_work = process_workload(workload)
-        acknowledge_completion(workload, processed_work, r)
+        success = acknowledge_completion(workload, processed_work, r)
+        successful += 1 if success else 0
+
+    log(f"Worker done. Successes: {successful}, total: {total} ({successful/total})")
 
 
 def pull_work(r):
@@ -18,13 +33,17 @@ def pull_work(r):
         did_move = r.smove("todos", "in_progress", workload)
 
         if did_move:
-            r.setex(f"{workload}-lock", 10, '')
+            r.setex(f"{workload}-lock", TIMEOUT_WORK, '')
             yield workload
 
         workload = r.srandmember('todos')
 
 
 def process_workload(workload):
+    # emulate work that might finish in-time, or slower
+    wait_time = random.randint(PROCESS_WAIT_MIN, PROCESS_WAIT_MAX)
+    log(f"Worker will sleep {wait_time} before processing {workload}")
+    time.sleep(wait_time)
     return workload ** 3 - 1  # need to smartify this
 
 
@@ -33,7 +52,7 @@ def acknowledge_completion(workload, result, r):
     :param workload:
     :param result:
     :param redis.Redis r:
-    :return:
+    :return: success status
     """
     ttl = r.ttl(f"{workload}-lock")
     if ttl >= -1:
@@ -46,9 +65,11 @@ def acknowledge_completion(workload, result, r):
         # processing (vs at most once processing)
         pipeline.delete(f"{workload}-lock")
         pipeline.execute()
-        print(f"Executed workload: {workload} to get {result}")
+        log(f"Executed workload: {workload} to get {result}")
+        return True
     else:
-        print(f"Sadly our work was rejected for workload {workload} even though we gor {result}")
+        log(f"Sadly our work was rejected for workload {workload} even though we gor {result}")
+        return False
 
 
 if __name__ == '__main__':

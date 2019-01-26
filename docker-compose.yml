@@ -5,16 +5,23 @@ services:
     image: redis:5.0.2-alpine
 
   work-creator:
-    build: work-creator
+    build: .
     command: python create_work.py
     depends_on:
       - redis
 
   work-consumer:
-    build: work-consumer
+    build: .
     command: python consume_work.py
     depends_on:
       - work-creator
+
+  timeout-cleaner:
+    build: .
+    command: python in_progress_timeout_cleaner.py
+    depends_on:
+      - redis
+
 
 
 
