@@ -15,8 +15,9 @@ services:
     command: python consume_work.py
     depends_on:
       - work-creator
+      - queue-cleaner
 
-  timeout-cleaner:
+  queue-cleaner:
     build: .
     command: python in_progress_timeout_cleaner.py
     depends_on:

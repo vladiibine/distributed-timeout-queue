@@ -1,4 +1,5 @@
-TIMEOUT_WORK = 2  # seconds
-ITEMS_TO_PROCESS = 10
+TIMEOUT_WORK = 0.2  # seconds
+ITEMS_TO_PROCESS = 100
 PROCESS_WAIT_MIN = 0  # seconds
-PROCESS_WAIT_MAX = 4  # seconds
+PROCESS_WAIT_MAX = 0.22  # seconds
+NUM_WORKERS = 4

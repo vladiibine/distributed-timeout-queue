@@ -4,6 +4,7 @@ import sys
 import redis
 
 from log_utils import log
+from queue_funcs import get_todos_len
 from settings import TIMEOUT_WORK
 
 
@@ -13,6 +14,8 @@ def main():
     while True:
         time.sleep(TIMEOUT_WORK)
         log("Waking up cleaner")
+        log(f'Still {get_todos_len(r)} tasks to execute')
+
         members = r.smembers('in_progress')
         log(f"Cleaner items in progress: {members}")
         if not members:
