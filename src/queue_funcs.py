@@ -1,3 +1,4 @@
+from request_utils import random_delay
 from settings import TODOS_QUEUE_NANE, DONE_QUEUE_NAME, IN_PROGRESS_QUEUE_NAME
 
 
@@ -7,7 +8,7 @@ def get_redis_set_len(r, set_name):
     :return: the length or -1 -> if unknown
     """
     try:
-        return int(r.scard(set_name))
+        return int(random_delay(lambda: r.scard(set_name)))
     except:
         return -1
 
@@ -32,7 +33,7 @@ def get_redis_list_members(r, set_name, begin=0, end=-1):
     :return:
     """
     try:
-        return [int(i) for i in r.lrange(set_name, begin, end)]
+        return [int(i) for i in random_delay(lambda: r.lrange(set_name, begin, end))]
     except:
         return []
 
@@ -45,6 +46,6 @@ def get_redis_set_members(r, set_name):
     :return:
     """
     try:
-        return [int(i) for i in r.smembers(set_name)]
+        return [int(i) for i in random_delay(lambda: r.smembers(set_name))]
     except:
         return []

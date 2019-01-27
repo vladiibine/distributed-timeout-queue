@@ -3,10 +3,26 @@ Testing out some ideas on how to use redis as a work queue.
 Main idea: there are 3 queues:
 todos, in_progress and done
 They are implemented as sets in redis... I know, weird, but there's the atomic 'smove' operation which is cool
+Now that I think about it, there's also a RPOPLPUSH operation. Atomic move of a key from one list to the next.
+We could have used this instead, but then the LREM operation is O(n)... whereas with the set we get O(1)
+
+We're going for "at-least-once processing".
 
 The creator puts workloads to the todos "queue"
 The worker pulls work from the "todos", moves it first to "in_progress", and when done, moves it to "done"
 The interesting part is when the work times out. The cleaner moves such timed-out keys back to "todos".
+
+To run the demo:
+```
+$ docker-compose up --build
+```
+...if running the demo multiple times, you might want to
+```
+$ docker-compose rm
+```
+...as containers are not destroyed, and the state of the queues is conserved.
+This affects for instance the reported number of items processed.
+
 
 To ckech what happened to redis,
 ```

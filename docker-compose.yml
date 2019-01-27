@@ -9,6 +9,8 @@ services:
     command: python create_work.py
     depends_on:
       - redis
+    environment:
+      host: 'creator'
 
   work-consumer-1:
     build: .
@@ -16,6 +18,8 @@ services:
     depends_on:
       - work-creator
       - queue-cleaner
+    environment:
+      host: 'c1'
 
   work-consumer-2:
     build: .
@@ -23,6 +27,8 @@ services:
     depends_on:
       - work-creator
       - queue-cleaner
+    environment:
+      host: 'c2'
 
   work-consumer-3:
     build: .
@@ -30,6 +36,8 @@ services:
     depends_on:
       - work-creator
       - queue-cleaner
+    environment:
+      host: 'c3'
 
   work-consumer-4:
     build: .
@@ -37,6 +45,8 @@ services:
     depends_on:
       - work-creator
       - queue-cleaner
+    environment:
+      host: 'c4'
 
   queue-cleaner:
     build: .

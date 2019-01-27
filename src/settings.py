@@ -6,7 +6,7 @@ TIMEOUT_WORK = 0.2  # seconds
 CLEANER_SLEEPS_FOR = TIMEOUT_WORK * 10  # seconds
 
 # How many items we should process
-ITEMS_TO_PROCESS = 100000
+ITEMS_TO_PROCESS = 10000
 
 # A worker waits at least this amount of time (seconds) before processing the work
 PROCESS_WAIT_MIN = 0  # seconds
@@ -16,8 +16,16 @@ PROCESS_WAIT_MAX = 0.22  # seconds
 # waking up to poll again
 PROCESS_WAIT_IDLE = 1  # seconds
 
+# How much time would we wait for the network requests to go through
+RANDOM_DELAY_MIN = 0  # seconds
+RANDOM_DELAY_MAX = 0.2  # seconds
+
 # Number of processes processing work
 NUM_WORKERS = 40
+
+# This value will be used for the lock-keys... we don't really need any value, but
+# since it's reused, it's good to save it here
+LOCK_VALUE = b''
 
 
 # The names of the 3 queues we're using

@@ -1,3 +1,7 @@
+from gevent import monkey
+monkey.patch_all()
+import gevent
+
 import collections
 import functools
 import time
@@ -8,6 +12,7 @@ import redis
 from log_utils import log
 from queue_funcs import get_todos_len, get_in_progress_len, get_done_len, get_redis_set_members, \
     get_redis_list_members
+from request_utils import random_delay
 from settings import CLEANER_SLEEPS_FOR, TODOS_QUEUE_NANE, IN_PROGRESS_QUEUE_NAME, DONE_QUEUE_NAME, \
     ITEMS_TO_PROCESS
 
@@ -26,7 +31,9 @@ def main():
         todos_len = get_todos_len(r)
         log(f'Still {todos_len} tasks to execute')
 
-        in_progress_items = r.smembers('in_progress')
+        # TODO - instead of retrieving all the keys, maybe use SSCAN
+        in_progress_items = random_delay(
+            lambda: r.smembers('in_progress'), delay_multiplier=0.01)
 
         # Some logging in case the workload appears to be done, for the
         # current batch at least
@@ -36,39 +43,22 @@ def main():
         if not in_progress_items:
             continue
 
-        for num in (int(m) for m in in_progress_items):
-            workload_lock_key = f'{num}-lock'
-            workload_key = f'{num}'
+        in_progress_lock_keys = [f'{int(num)}-lock' for num in in_progress_items]
 
-            ttl = r.ttl(workload_lock_key)
-            if int(ttl) == -2:
-                log(f"!!!!~~~~Cleaner will reset {workload_key}")
-                pipeline = r.pipeline()
-                pipeline.delete(workload_lock_key)
-                pipeline.smove(IN_PROGRESS_QUEUE_NAME, TODOS_QUEUE_NANE, workload_key)
-                pipeline.execute()
+        in_progress_responses = random_delay(lambda: r.mget(in_progress_lock_keys))
 
+        num_keys_to_reset = len([e for e in in_progress_responses if e is None])
 
-def log_workbatch_conclusion(r, todos_len_tracker, start_date):
-    force_log = functools.partial(log, force=True)
-    if all(i == 0 for i in todos_len_tracker):
-        end_date = (datetime.datetime.now() - datetime.timedelta(seconds=5 * CLEANER_SLEEPS_FOR))
-        time_interval = end_date - start_date
-
-        force_log("Cleaner: works appears to be done...for now",)
-        force_log(f"in progress: {get_in_progress_len(r)}")
-        force_log(f"done: {get_done_len(r)}", )
-        force_log(f"todos: {get_todos_len(r)}", )
-        force_log(f"-------------------------------------", )
-        force_log(f"todos: {get_redis_list_members(r, TODOS_QUEUE_NANE)}", )
-        force_log(f"in_progres: {get_redis_set_members(r, IN_PROGRESS_QUEUE_NAME)}")
-        force_log(f"done: {list(sorted((get_redis_set_members(r, DONE_QUEUE_NAME))))}")
-        force_log(f"done contains numbers 0..99: {list(sorted((get_redis_set_members(r, DONE_QUEUE_NAME)))) == list(range(ITEMS_TO_PROCESS))}")
-        force_log(f"Items/second processed: {ITEMS_TO_PROCESS/time_interval.total_seconds()}")
-
-    else:
-        force_log(f"Cleaner, last todos lengths: {todos_len_tracker}. "
-                  f"Work considered done if only 0s appear")
+        # log(f"in_progress keys to query: {in_progress_lock_keys}", force=True)
+        # log(f"in_progress_responses {in_progress_responses}", force=True)
+        for idx, (resp, lock_key, key) in enumerate(zip(in_progress_responses, in_progress_lock_keys, in_progress_items)):
+            if resp is None:
+                # TODO - we can probably use something like gevent here. This takes REALLY long!
+                log(f"!!!!~~~~Cleaner will reset {key} ({idx+1}/{num_keys_to_reset})", force=True)
+                pipeline = random_delay(lambda: r.pipeline())
+                random_delay(lambda: pipeline.delete(lock_key))
+                random_delay(lambda: pipeline.smove(IN_PROGRESS_QUEUE_NAME, TODOS_QUEUE_NANE, key))
+                random_delay(lambda: pipeline.execute())
 
 
 class ConclusionLogger:
