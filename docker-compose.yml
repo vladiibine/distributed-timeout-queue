@@ -15,46 +15,50 @@ services:
   work-consumer-1:
     build: .
     command: python consume_work.py
-    depends_on:
-      - work-creator
-      - queue-cleaner
     environment:
-      host: 'c1'
+      host: 'w1'
 
   work-consumer-2:
     build: .
     command: python consume_work.py
-    depends_on:
-      - work-creator
-      - queue-cleaner
     environment:
-      host: 'c2'
+      host: 'w2'
 
   work-consumer-3:
     build: .
     command: python consume_work.py
-    depends_on:
-      - work-creator
-      - queue-cleaner
     environment:
-      host: 'c3'
+      host: 'w3'
 
   work-consumer-4:
     build: .
     command: python consume_work.py
-    depends_on:
-      - work-creator
-      - queue-cleaner
     environment:
-      host: 'c4'
+      host: 'w4'
 
-  queue-cleaner:
+  queue-cleaner-1:
     build: .
     command: python in_progress_timeout_cleaner.py
     depends_on:
       - redis
+    environment:
+      host: 'c1'
 
+  queue-cleaner-2:
+    build: .
+    command: python in_progress_timeout_cleaner.py
+    depends_on:
+      - redis
+    environment:
+      host: 'c2'
 
+  queue-cleaner-3:
+    build: .
+    command: python in_progress_timeout_cleaner.py
+    depends_on:
+      - redis
+    environment:
+      host: 'c3'
 
 
 #services:

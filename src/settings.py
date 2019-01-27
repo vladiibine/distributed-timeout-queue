@@ -1,9 +1,9 @@
 # work is considered timed out after this many seconds. The task gets
 # put back in the TODOS list, from the IN_PROGRESS set
-TIMEOUT_WORK = 0.2  # seconds
+TIMEOUT_WORK = 1  # seconds
 
 # How much time does the cleaner wait until cleaning up timed-out tasks
-CLEANER_SLEEPS_FOR = TIMEOUT_WORK * 10  # seconds
+CLEANER_SLEEPS_FOR = 20  # seconds
 
 # How many items we should process
 ITEMS_TO_PROCESS = 10000

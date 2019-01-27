@@ -1,19 +1,14 @@
 import multiprocessing
 import random
 import time
-import os
 
 import redis
 
-from log_utils import log
+from log_utils import log, name
 from request_utils import random_delay
 from settings import TIMEOUT_WORK, PROCESS_WAIT_MIN, PROCESS_WAIT_MAX, NUM_WORKERS, \
-    ITEMS_TO_PROCESS, PROCESS_WAIT_IDLE, TODOS_QUEUE_NANE, IN_PROGRESS_QUEUE_NAME, DONE_QUEUE_NAME, \
+    PROCESS_WAIT_IDLE, TODOS_QUEUE_NANE, IN_PROGRESS_QUEUE_NAME, DONE_QUEUE_NAME, \
     LOCK_VALUE
-
-
-def name():
-    return f"{os.environ.get('host', '?')}-{os.getpid()}"
 
 
 def main(*args, **kwargs):
@@ -45,7 +40,7 @@ def main(*args, **kwargs):
 
 
 def pull_work(r):
-    workload = random_delay(lambda: r.srandmember(TODOS_QUEUE_NANE))
+    workload = _request_work(r)
     # workload = random_delay(r.srandmember, TODOS_QUEUE_NANE)
 
     while workload is not None:
@@ -62,7 +57,21 @@ def pull_work(r):
             random_delay(lambda: pipeline.execute())
             yield workload
 
-        workload = random_delay(lambda: r.srandmember(TODOS_QUEUE_NANE))
+        workload = _request_work(r)
+
+
+def _request_work(r):
+    """
+    This just retries to get work, until redis is up and running
+    :param r:
+    :return:
+    """
+    while True:
+        try:
+            return random_delay(lambda: r.srandmember(TODOS_QUEUE_NANE))
+        except Exception as err:
+            log(f"Worker {name()} - exception: {err}", force=True)
+            pass  # redis not ready
 
 
 def process_workload(workload):
