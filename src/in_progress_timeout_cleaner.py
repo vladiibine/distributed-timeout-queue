@@ -1,7 +1,3 @@
-from gevent import monkey
-monkey.patch_all()
-import gevent
-
 import collections
 import functools
 import time
@@ -47,18 +43,24 @@ def main():
 
         in_progress_responses = random_delay(lambda: r.mget(in_progress_lock_keys))
 
-        num_keys_to_reset = len([e for e in in_progress_responses if e is None])
+        keys_to_reset = [
+            int(item)
+            for resp, item in zip(in_progress_responses, in_progress_items)
+            if resp is None
+        ]
 
-        # log(f"in_progress keys to query: {in_progress_lock_keys}", force=True)
-        # log(f"in_progress_responses {in_progress_responses}", force=True)
+        log(f"!!!~~~Cleaner will reset {len(keys_to_reset)} keys: "
+            f"{keys_to_reset if len(keys_to_reset) < 200 else '>= too keys. Will not display them'}",
+            force=True
+            )
+        pipeline = r.pipeline()
+
         for idx, (resp, lock_key, key) in enumerate(zip(in_progress_responses, in_progress_lock_keys, in_progress_items)):
             if resp is None:
-                # TODO - we can probably use something like gevent here. This takes REALLY long!
-                log(f"!!!!~~~~Cleaner will reset {key} ({idx+1}/{num_keys_to_reset})", force=True)
-                pipeline = random_delay(lambda: r.pipeline())
-                random_delay(lambda: pipeline.delete(lock_key))
-                random_delay(lambda: pipeline.smove(IN_PROGRESS_QUEUE_NAME, TODOS_QUEUE_NANE, key))
-                random_delay(lambda: pipeline.execute())
+                pipeline.delete(lock_key)
+                pipeline.smove(IN_PROGRESS_QUEUE_NAME, TODOS_QUEUE_NANE, key)
+
+        random_delay(lambda: pipeline.execute())
 
 
 class ConclusionLogger:
@@ -99,8 +101,9 @@ class ConclusionLogger:
                 for elem in counter:
                     if counter[elem] > 1:
                         force_log(f'item {elem} was present {counter[elem]} times')
+            else:
+                force_log(f"All expected keys were processed! :)")
 
-            # force_log(f"done contains numbers 0..{ITEMS_TO_PROCESS - 1}: {list(sorted((get_redis_set_members(self.r, DONE_QUEUE_NAME)))) == list(range(ITEMS_TO_PROCESS))}")
             force_log(f"Items/second processed: {ITEMS_TO_PROCESS/time_interval.total_seconds()}")
 
         elif not self.already_logged:
